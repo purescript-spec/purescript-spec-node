@@ -62,4 +62,4 @@ jobs:
         run: npx spago build
 
       - name: Run tests
-        run: npx spago test
+        run: npx spago test --timeout 30
