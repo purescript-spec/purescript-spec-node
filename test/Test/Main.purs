@@ -3,19 +3,18 @@ module Test.Main where
 import Prelude
 
 import Data.Array (intercalate)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
 import Data.String (trim)
 import Data.String.Regex (replace) as Regex
 import Data.String.Regex.Flags (global) as Regex
 import Data.String.Regex.Unsafe (unsafeRegex) as Regex
 import Effect (Effect)
-import Effect.Class (liftEffect)
 import Node.ChildProcess.Types (Exit(..), pipe)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FS
 import Node.Library.Execa (execa)
 import Node.Platform (Platform(..))
-import Node.Process (lookupEnv, platform)
+import Node.Process (platform)
 import Test.Spec as Spec
 import Test.Spec.Assertions (fail)
 import Test.Spec.Reporter (consoleReporter)
@@ -78,9 +77,8 @@ main = runSpecAndExitProcess [consoleReporter] $
     runTest args' = do
       let opts = _ { cwd = Just "test-fixtures/project", stdin = Just pipe, stdout = Just pipe, stderr = Just pipe }
           args = ["test", "--"] <> args'
-      cmd <- spagoCmd
-      execa cmd ["build"] opts >>= _.getResult >>= shouldSucceed
-      execa cmd args opts >>= _.getResult
+      execa spagoCmd ["build"] opts >>= _.getResult >>= shouldSucceed
+      execa spagoCmd args opts >>= _.getResult
 
     nukeLastResults =
       FS.rm' "test-fixtures/project/.spec-results"
