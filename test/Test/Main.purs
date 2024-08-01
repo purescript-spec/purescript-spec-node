@@ -8,7 +8,6 @@ import Data.String (trim)
 import Data.String.Regex (replace) as Regex
 import Data.String.Regex.Flags (global) as Regex
 import Data.String.Regex.Unsafe (unsafeRegex) as Regex
-import Debug (traceM)
 import Effect (Effect)
 import Node.ChildProcess.Types (Exit(..), pipe)
 import Node.Encoding (Encoding(..))
