@@ -45,7 +45,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install global NPM packages
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'windows-latest'
         run: npm i --global purescript@0.15.15 spago@next purs-tidy@latest esbuild@latest
 
       - name: Cache PureScript dependencies
