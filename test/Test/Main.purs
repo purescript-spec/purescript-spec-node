@@ -36,7 +36,7 @@ main = runSpecAndExitProcess [consoleReporter] $
         runTest ["--example", "gotham city"] >>= shouldFailWith "filter-spaces.txt"
 
       Spec.it "can filter by FULL test name" do
-        runTest ["--example", "gotham city is a dark"] >>= shouldFailWith "filter-spaces.txt"
+        runTest ["--example", "gotham city is a dark"] >>= shouldFailWith "filter-full-name.txt"
 
     Spec.describe "--example-matches" do
       Spec.it "can filter by test name by regex" do
