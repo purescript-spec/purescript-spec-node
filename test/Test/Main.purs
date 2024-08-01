@@ -74,9 +74,9 @@ main = runSpecAndExitProcess [consoleReporter] $
   where
     runTest args' = do
       let opts = _ { cwd = Just "test-fixtures/project", stdin = Just pipe, stdout = Just pipe, stderr = Just pipe }
-          args = ["spago", "test", "--"] <> args'
-      execa "npx" ["spago", "build"] opts >>= _.getResult >>= shouldSucceed
-      execa "npx" args opts >>= _.getResult
+          args = ["test", "--"] <> args'
+      execa "spago" ["build"] opts >>= _.getResult >>= shouldSucceed
+      execa "spago" args opts >>= _.getResult
 
     nukeLastResults =
       FS.rm' "test-fixtures/project/.spec-results"
