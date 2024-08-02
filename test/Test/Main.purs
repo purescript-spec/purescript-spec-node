@@ -9,7 +9,7 @@ import Data.String.Regex (replace) as Regex
 import Data.String.Regex.Flags (global) as Regex
 import Data.String.Regex.Unsafe (unsafeRegex) as Regex
 import Effect (Effect)
-import Node.ChildProcess.Types (Exit(..), pipe)
+import Node.ChildProcess.Types (Exit(..), pipe, inherit)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FS
 import Node.Library.Execa (execa)
@@ -75,7 +75,7 @@ main = runSpecAndExitProcess [consoleReporter] $
 
   where
     runTest args' = do
-      let opts = _ { cwd = Just "test-fixtures/project", stdin = Just pipe, stdout = Just pipe, stderr = Just pipe }
+      let opts = _ { cwd = Just "test-fixtures/project", stdin = Just inherit, stdout = Just pipe, stderr = Just pipe }
           args = ["test", "--"] <> args'
       execa spagoCmd ["build"] opts >>= _.getResult >>= shouldSucceed
       execa spagoCmd args opts >>= _.getResult
