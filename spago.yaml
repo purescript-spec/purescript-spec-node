@@ -41,7 +41,7 @@ package:
   test:
     main: Test.Main
     dependencies:
-      - debug
+      - console
       - node-buffer
       - node-child-process
       - node-execa

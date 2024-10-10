@@ -6,9 +6,10 @@ import Data.Identity (Identity(..))
 import Data.Newtype (un)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
-import Effect.Class (liftEffect)
+import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect, liftEffect)
 import Node.Process (exit')
-import Test.Spec (Spec)
+import Test.Spec (Spec, SpecT)
 import Test.Spec.Result (Result)
 import Test.Spec.Runner (Reporter)
 import Test.Spec.Runner as Spec
@@ -17,11 +18,29 @@ import Test.Spec.Runner.Node.Persist as Persist
 import Test.Spec.Summary (successful)
 import Test.Spec.Tree (Tree)
 
+type Args c =
+  { defaultConfig :: Cfg.TestRunConfig' c
+  , parseCLIOptions :: Boolean
+  }
+
+defaultArgs :: Args ()
+defaultArgs = { defaultConfig: Cfg.defaultConfig, parseCLIOptions: true }
+
+argsToConfig ::
+  forall c m
+  .  MonadEffect m
+  => Args c
+  -> m (Cfg.TestRunConfig' c)
+argsToConfig args =
+  if args.parseCLIOptions then
+    Cfg.fromCommandLine' args.defaultConfig Cfg.commandLineOptionParsers
+  else
+    pure args.defaultConfig
+
 -- | Runs the given spec, using configuration derived from CLI options (if any),
 -- | and exits the process with an exit indicating success or failure.
 runSpecAndExitProcess :: Array Reporter -> Spec Unit -> Effect Unit
-runSpecAndExitProcess =
-  runSpecAndExitProcess' { defaultConfig: Cfg.defaultConfig, parseCLIOptions: true }
+runSpecAndExitProcess = runSpecAndExitProcess' defaultArgs
 
 -- | Runs the given spec and exits the process with an exit code indicating
 -- | success or failure.
@@ -30,24 +49,45 @@ runSpecAndExitProcess =
 -- | should be used as is or CLI options (if any provided) should be applied on
 -- | top of it.
 runSpecAndExitProcess' :: ∀ c.
-  { defaultConfig :: Cfg.TestRunConfig' c
-  , parseCLIOptions :: Boolean
-  }
+  Args c
   -> Array Reporter
   -> Spec Unit
   -> Effect Unit
 runSpecAndExitProcess' args reporters spec = launchAff_ do
-  config <-
-    if args.parseCLIOptions then
-      Cfg.fromCommandLine' args.defaultConfig Cfg.commandLineOptionParsers
-    else
-      pure args.defaultConfig
-  res <- runSpecAndGetResults config reporters spec
-  liftEffect $ exit' $ if successful res then 0 else 1
+  m <- runSpecAndExitProcessM args reporters spec
+  un Identity $ m
 
-runSpecAndGetResults :: ∀ c. Cfg.TestRunConfig' c -> Array Reporter -> Spec Unit -> Aff (Array (Tree String Void Result))
-runSpecAndGetResults config reporters spec = do
+runSpecAndExitProcessM ::
+  ∀ c m mAff
+  . Functor m
+  => MonadAff mAff
+  => Args c
+  -> Array Reporter
+  -> SpecT Aff Unit m Unit
+  -> mAff (m (Aff Unit))
+runSpecAndExitProcessM args reporters spec = do
+  config <- argsToConfig args
+  (res :: m (Aff (Array (Tree String Void Result)))) <- runSpecAndGetResultsM config reporters spec
+  let (results' :: m (Aff Unit)) =
+        res <#> \affArray -> do
+          results <- affArray
+          liftEffect $ exit' $ if successful results then 0 else 1
+  pure $ results'
+
+runSpecAndGetResultsM ::
+  ∀ c m mAff
+  . Functor m
+  => MonadAff mAff
+  => Cfg.TestRunConfig' c
+  -> Array Reporter
+  -> SpecT Aff Unit m Unit
+  -> mAff (m (Aff (Array (Tree String Void Result))))
+runSpecAndGetResultsM config reporters spec = do
   specCfg <- Cfg.toSpecConfig config <#> _ { exit = false }
-  results <- un Identity $ Spec.evalSpecT specCfg reporters spec
-  Persist.persistResults results
-  pure results
+  let (results :: m (Aff (Array (Tree String Void Result)))) = Spec.evalSpecT specCfg reporters spec
+  let (results' :: m (Aff (Array (Tree String Void Result)))) =
+        results <#> \affArray -> do
+          results <- affArray
+          Persist.persistResults results
+          pure results
+  pure results'
