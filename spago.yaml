@@ -8,7 +8,7 @@ package:
   name: spec-node
   publish:
     license: MIT
-    version: 0.0.2
+    version: 0.0.3
     location:
       githubOwner: purescript-spec
       githubRepo: purescript-spec-node
