@@ -5,8 +5,8 @@
         "path": "./",
         "core": {
           "dependencies": [
-            "console",
             "effect",
+            "node-process",
             "prelude",
             "spec-node"
           ],

@@ -1,0 +1,6 @@
+  ✓︎ test number 1
+  ✓︎ test number 2
+  ✓︎ test number 3
+
+Summary
+3/3 tests passed

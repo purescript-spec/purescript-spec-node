@@ -1,0 +1,15 @@
+package:
+  name: test-fixture
+  dependencies:
+    - effect
+    - node-process
+    - prelude
+    - spec-node
+  test:
+    main: Test.Main
+    dependencies: []
+workspace:
+  packageSet:
+    registry: 59.0.0
+  extraPackages:
+    spec-node: { path: "../.." }

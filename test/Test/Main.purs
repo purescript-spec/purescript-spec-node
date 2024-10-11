@@ -21,9 +21,11 @@ import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner.Node (runSpecAndExitProcess)
 
 main :: Effect Unit
-main = runSpecAndExitProcess [consoleReporter] $
+main = runSpecAndExitProcess [consoleReporter] do
 
-  Spec.before_ nukeLastResults do
+  Spec.before_ (nukeLastResults "project") do
+
+    let runTest = runTest' "project"
 
     Spec.describe "--fail-fast" do
       Spec.it "stops after first failure" do
@@ -73,15 +75,24 @@ main = runSpecAndExitProcess [consoleReporter] $
         runTest ["--timeout", "1"] >>= shouldFail
         runTest ["--only-failures", "--example-matches", "metr.+lis", "--timeout", "1"] >>= shouldFailWith "only-failures-and-filter-regex-and-timeout.txt"
 
+
+  Spec.describe "#2" do
+    let dir = "issue-2-non-identity-generator-monad"
+    Spec.before_ (nukeLastResults dir) do
+      Spec.it "supports non-Identity test tree generator monad" do
+        runTest' dir ["5"] >>= shouldFailWith (dir <> "/5-tests.txt")
+        runTest' dir [] >>= shouldFailWith (dir <> "/3-tests.txt")
+        runTest' dir ["0"] >>= shouldFailWith (dir <> "/0-tests.txt")
+
   where
-    runTest args' = do
-      let opts = _ { cwd = Just "test-fixtures/project", stdin = Just inherit, stdout = Just pipe, stderr = Just pipe }
+    runTest' dir args' = do
+      let opts = _ { cwd = Just $ "test-fixtures/" <> dir, stdin = Just inherit, stdout = Just pipe, stderr = Just pipe }
           args = ["test", "-q", "--"] <> args'
       execa spagoCmd ["build", "-q"] opts >>= _.getResult >>= shouldSucceed
       execa spagoCmd args opts >>= _.getResult
 
-    nukeLastResults =
-      FS.rm' "test-fixtures/project/.spec-results"
+    nukeLastResults dir =
+      FS.rm' ("test-fixtures/" <> dir <> "/.spec-results")
         { force: true, maxRetries: 1, recursive: true, retryDelay: 1000 }
 
     shouldFailWith fixture result =
